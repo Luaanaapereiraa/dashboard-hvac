@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { TabPlanejamento, type FaseCronograma } from "@/components/tabs/tab-planejamento"
 import { TabPlanejamentoSemanal, type MetaSemanal } from "@/components/tabs/tab-planejamento-semanal"
 import { TabExecucao, type EquipamentoExecucao } from "@/components/tabs/tab-execucao"
-import { TabMetricas, type DadosCurvaS } from "@/components/tabs/tab-metricas"
+import { TabMetricas, type DadosCurvaS, type ObraCarteira } from "@/components/tabs/tab-metricas"
 import { Calendar, ClipboardList, Wrench, BarChart3 } from "lucide-react"
 
 // Dados mock para demonstração
@@ -194,6 +194,15 @@ export default function DashboardPage() {
   const metasObra = metas[obraSelecionadaId] || metasDefault
   const curvaObra = dadosCurvaSIniciais[obraSelecionadaId] || curvaDefault
   const metricasObra = metricasIniciais[obraSelecionadaId] || { desvio: 5, produtividade: 85, tendencia: "stable" as const }
+  
+  // Dados para visão de carteira total
+  const todasObrasCarteira: ObraCarteira[] = obras.map(obra => ({
+    id: obra.id,
+    nome: obra.nome,
+    desvio: metricasIniciais[obra.id]?.desvio || 0,
+    produtividade: metricasIniciais[obra.id]?.produtividade || 100,
+    progresso: obra.progresso,
+  }))
 
   const handleUpdateEquipamento = useCallback((
     equipId: string,
@@ -325,6 +334,11 @@ export default function DashboardPage() {
                 produtividadeEquipe={metricasObra.produtividade}
                 tendenciaProdutividade={metricasObra.tendencia}
                 dadosCurvaS={curvaObra}
+                todasObras={todasObrasCarteira}
+                onSelecionarObra={(obraId) => {
+                  setObraSelecionadaId(obraId)
+                  setActiveTab("execucao")
+                }}
               />
             </TabsContent>
           </Tabs>

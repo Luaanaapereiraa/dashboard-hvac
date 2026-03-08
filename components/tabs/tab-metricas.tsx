@@ -10,7 +10,8 @@ import {
   YAxis,
   ReferenceLine
 } from "recharts"
-import { TrendingUp, TrendingDown, Clock, Users } from "lucide-react"
+import { TrendingUp, TrendingDown, Clock, Users, AlertTriangle, ChevronRight } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export interface DadosCurvaS {
   semana: string
@@ -18,20 +19,35 @@ export interface DadosCurvaS {
   real: number
 }
 
+export interface ObraCarteira {
+  id: string
+  nome: string
+  desvio: number
+  produtividade: number
+  progresso: number
+}
+
 interface TabMetricasProps {
   desvioCronograma: number // em dias
   produtividadeEquipe: number // porcentagem
   tendenciaProdutividade: "up" | "down" | "stable"
   dadosCurvaS: DadosCurvaS[]
+  todasObras?: ObraCarteira[]
+  onSelecionarObra?: (obraId: string) => void
 }
 
 export function TabMetricas({ 
   desvioCronograma, 
   produtividadeEquipe, 
   tendenciaProdutividade,
-  dadosCurvaS 
+  dadosCurvaS,
+  todasObras = [],
+  onSelecionarObra
 }: TabMetricasProps) {
   const isAtrasado = desvioCronograma > 0
+  const obrasCriticas = todasObras.filter(o => o.desvio > 10).sort((a, b) => b.desvio - a.desvio)
+  const obrasAtencao = todasObras.filter(o => o.desvio > 5 && o.desvio <= 10).sort((a, b) => b.desvio - a.desvio)
+  const obrasEmDia = todasObras.filter(o => o.desvio <= 5).sort((a, b) => a.desvio - b.desvio)
 
   return (
     <div className="space-y-4">
@@ -212,6 +228,143 @@ export function TabMetricas({
           </p>
         </div>
       </div>
+
+      {/* Visão Carteira Total */}
+      {todasObras.length > 0 && (
+        <div className="bg-card rounded-lg border border-border p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Visão Carteira Total</h3>
+              <p className="text-xs text-muted-foreground">Status de todas as {todasObras.length} obras</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="size-2 rounded-full bg-status-danger" />
+                <span className="text-xs text-muted-foreground">Crítico ({obrasCriticas.length})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="size-2 rounded-full bg-status-warning" />
+                <span className="text-xs text-muted-foreground">Atenção ({obrasAtencao.length})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="size-2 rounded-full bg-status-success" />
+                <span className="text-xs text-muted-foreground">Em dia ({obrasEmDia.length})</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de obras críticas (desvio > 10%) - destacadas em vermelho */}
+          {obrasCriticas.length > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="size-4 text-status-danger" />
+                <span className="text-xs font-medium text-status-danger uppercase tracking-wide">
+                  Obras Críticas - Desvio {"> "}10%
+                </span>
+              </div>
+              <div className="space-y-1">
+                {obrasCriticas.map((obra) => (
+                  <button
+                    key={obra.id}
+                    onClick={() => onSelecionarObra?.(obra.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-2.5 rounded-lg transition-colors",
+                      "bg-status-danger/10 border border-status-danger/30",
+                      "hover:bg-status-danger/20 focus:outline-none focus:ring-2 focus:ring-status-danger/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="size-2 rounded-full bg-status-danger animate-pulse" />
+                      <span className="text-sm font-medium text-status-danger">{obra.nome}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="bg-status-danger/20 text-status-danger border-status-danger/30 text-xs">
+                        +{obra.desvio} dias
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{obra.progresso}%</span>
+                      <ChevronRight className="size-4 text-status-danger" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Lista de obras em atenção (desvio 5-10%) */}
+          {obrasAtencao.length > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-medium text-status-warning uppercase tracking-wide">
+                  Obras em Atenção
+                </span>
+              </div>
+              <div className="space-y-1">
+                {obrasAtencao.map((obra) => (
+                  <button
+                    key={obra.id}
+                    onClick={() => onSelecionarObra?.(obra.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-2 rounded-lg transition-colors",
+                      "bg-status-warning/5 border border-status-warning/20",
+                      "hover:bg-status-warning/10 focus:outline-none focus:ring-2 focus:ring-status-warning/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="size-2 rounded-full bg-status-warning" />
+                      <span className="text-sm font-medium text-foreground">{obra.nome}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="bg-status-warning/20 text-status-warning border-status-warning/30 text-xs">
+                        +{obra.desvio} dias
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{obra.progresso}%</span>
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Lista de obras em dia (desvio <= 5%) */}
+          {obrasEmDia.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-medium text-status-success uppercase tracking-wide">
+                  Obras em Dia
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {obrasEmDia.map((obra) => (
+                  <button
+                    key={obra.id}
+                    onClick={() => onSelecionarObra?.(obra.id)}
+                    className={cn(
+                      "flex items-center justify-between p-2 rounded-lg transition-colors",
+                      "bg-muted/30 border border-border/50",
+                      "hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="size-2 rounded-full bg-status-success" />
+                      <span className="text-xs font-medium text-foreground truncate">{obra.nome}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        obra.desvio <= 0 ? "text-status-success" : "text-muted-foreground"
+                      )}>
+                        {obra.desvio <= 0 ? `${obra.desvio}d` : `+${obra.desvio}d`}
+                      </span>
+                      <ChevronRight className="size-3 text-muted-foreground" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
